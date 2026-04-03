@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康达人 - 服务重启</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-label {
+            color: #666;
+        }
+        .status-value {
+            font-weight: 600;
+        }
+        .status-ok { color: #10b981; }
+        .status-error { color: #ef4444; }
+        .status-pending { color: #f59e0b; }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        .log {
+            background: #1a1a2e;
+            color: #00ff88;
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-line {
+            margin: 5px 0;
+        }
+        .log-time {
+            color: #888;
+        }
+        .log-error {
+            color: #ff6b6b;
+        }
+        .log-success {
+            color: #00ff88;
+        }
+        .log-info {
+            color: #74b9ff;
+        }
+        .tip {
+            background: #fef3c7;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏃 健康达人服务管理</h1>
+        <p class="subtitle">手动唤醒和检测服务状态</p>
+        
+        <div class="status-card">
+            <div class="status-item">
+                <span class="status-label">后端服务</span>
+                <span class="status-value" id="backend-status">检测中...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">前端服务</span>
+                <span class="status-value" id="frontend-status">检测中...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">最后检测</span>
+                <span class="status-value" id="last-check">-</span>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary" id="wakeBtn" onclick="wakeUp()">
+            🔔 唤醒服务
+        </button>
+        <button class="btn btn-secondary" onclick="checkStatus()">
+            🔄 刷新状态
+        </button>
+        
+        <div class="log" id="log">
+            <div class="log-line"><span class="log-time">[系统]</span> <span class="log-info">准备就绪</span></div>
+        </div>
+        
+        <div class="tip">
+            💡 <strong>提示</strong>：如果唤醒失败，可能是沙箱实例已销毁，需要到 Coze 平台手动重启项目。
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://561b9af8-c1e5-426c-b873-60191e12cc56.dev.coze.site';
+        
+        function log(msg, type = 'info') {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<div class="log-line"><span class="log-time">[${time}]</span> <span class="log-${type}">${msg}</span></div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        async function checkStatus() {
+            log('开始检测服务状态...', 'info');
+            
+            // 检测后端
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/v1/health`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(10000)
+                });
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('backend-status').textContent = '✅ 正常';
+                    document.getElementById('backend-status').className = 'status-value status-ok';
+                    log('后端服务正常', 'success');
+                } else {
+                    document.getElementById('backend-status').textContent = '⚠️ 异常';
+                    document.getElementById('backend-status').className = 'status-value status-error';
+                    log('后端服务异常: ' + JSON.stringify(data), 'error');
+                }
+            } catch (error) {
+                document.getElementById('backend-status').textContent = '❌ 无法访问';
+                document.getElementById('backend-status').className = 'status-value status-error';
+                log('后端服务无法访问: ' + error.message, 'error');
+            }
+            
+            // 检测前端
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'HEAD',
+                    signal: AbortSignal.timeout(10000)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('frontend-status').textContent = '✅ 正常';
+                    document.getElementById('frontend-status').className = 'status-value status-ok';
+                    log('前端服务正常', 'success');
+                } else {
+                    document.getElementById('frontend-status').textContent = '⚠️ 异常';
+                    document.getElementById('frontend-status').className = 'status-value status-error';
+                    log('前端服务异常: HTTP ' + response.status, 'error');
+                }
+            } catch (error) {
+                document.getElementById('frontend-status').textContent = '❌ 无法访问';
+                document.getElementById('frontend-status').className = 'status-value status-error';
+                log('前端服务无法访问: ' + error.message, 'error');
+            }
+            
+            document.getElementById('last-check').textContent = new Date().toLocaleTimeString();
+        }
+        
+        async function wakeUp() {
+            const btn = document.getElementById('wakeBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 唤醒中...';
+            
+            log('开始唤醒服务...', 'info');
+            
+            try {
+                // 多次尝试唤醒
+                for (let i = 1; i <= 3; i++) {
+                    log(`第 ${i} 次尝试唤醒...`, 'info');
+                    
+                    try {
+                        const response = await fetch(`${BACKEND_URL}/api/v1/health`, {
+                            method: 'GET',
+                            signal: AbortSignal.timeout(30000)
+                        });
+                        const data = await response.json();
+                        
+                        if (data.status === 'ok') {
+                            log('✅ 服务唤醒成功！', 'success');
+                            await checkStatus();
+                            btn.disabled = false;
+                            btn.textContent = '🔔 唤醒服务';
+                            return;
+                        } else {
+                            log('响应异常: ' + JSON.stringify(data), 'error');
+                        }
+                    } catch (error) {
+                        log('尝试失败: ' + error.message, 'error');
+                    }
+                    
+                    if (i < 3) {
+                        log('等待 5 秒后重试...', 'info');
+                        await new Promise(r => setTimeout(r, 5000));
+                    }
+                }
+                
+                log('❌ 唤醒失败，请到 Coze 平台手动重启', 'error');
+                alert('唤醒失败！\n\n可能原因：\n1. 沙箱实例已销毁\n2. 网络问题\n\n请登录 Coze 平台手动重启项目。');
+                
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔔 唤醒服务';
+            }
+        }
+        
+        // 页面加载时自动检测
+        checkStatus();
+    </script>
+</body>
+</html>

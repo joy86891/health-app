@@ -1,0 +1,43 @@
+{
+  "name": "server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "bash ../.cozeproj/scripts/server_dev_run.sh",
+    "preinstall": "npx only-allow pnpm",
+    "start": "NODE_ENV=production PORT=${PORT:-5000} node dist/index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1018.0",
+    "@aws-sdk/s3-request-presigner": "^3.1018.0",
+    "@supabase/supabase-js": "2.95.3",
+    "archiver": "^7.0.1",
+    "cors": "^2.8.5",
+    "coze-coding-dev-sdk": "^0.7.17",
+    "dayjs": "^1.11.19",
+    "dotenv": "^17.2.4",
+    "drizzle-orm": "^0.45.1",
+    "drizzle-zod": "^0.8.3",
+    "exceljs": "^4.4.0",
+    "express": "^4.22.1",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "pg": "^8.16.3",
+    "uuid": "^13.0.0",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/archiver": "^7.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.0.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.16.0",
+    "@types/uuid": "^11.0.0",
+    "drizzle-kit": "^0.31.8",
+    "esbuild": "0.27.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.3"
+  }
+}

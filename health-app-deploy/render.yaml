@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: health-app-backend
+    env: node
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: server
+    buildCommand: npm install -g pnpm && pnpm install && pnpm run build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: COZE_BUCKET_ENDPOINT_URL
+        sync: false
+      - key: COZE_BUCKET_NAME
+        sync: false
+      - key: COZE_WORKLOAD_IDENTITY_CLIENT_ID
+        sync: false
+      - key: COZE_WORKLOAD_IDENTITY_CLIENT_SECRET
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_KEY
+        value: "88888888"
